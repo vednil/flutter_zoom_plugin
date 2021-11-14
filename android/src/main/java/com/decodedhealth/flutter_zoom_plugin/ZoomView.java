@@ -13,6 +13,7 @@ import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.platform.PlatformView;
+import us.zoom.sdk.MeetingViewsOptions;
 import us.zoom.sdk.JoinMeetingOptions;
 import us.zoom.sdk.JoinMeetingParams;
 import us.zoom.sdk.StartMeetingParamsWithoutLogin;
@@ -135,6 +136,7 @@ public class ZoomView  implements PlatformView,
         opts.no_dial_in_via_phone = parseBoolean(options, "disableDialIn", false);
         opts.no_disconnect_audio = parseBoolean(options, "noDisconnectAudio", false);
         opts.no_audio = parseBoolean(options, "noAudio", false);
+        opts.meeting_views_options = MeetingViewsOptions.NO_TEXT_PASSWORD;
 
         JoinMeetingParams params = new JoinMeetingParams();
 
@@ -168,15 +170,16 @@ public class ZoomView  implements PlatformView,
         opts.no_dial_in_via_phone = parseBoolean(options, "disableDialIn", false);
         opts.no_disconnect_audio = parseBoolean(options, "noDisconnectAudio", false);
         opts.no_audio = parseBoolean(options, "noAudio", false);
+        opts.meeting_views_options = MeetingViewsOptions.NO_TEXT_PASSWORD;
 
         StartMeetingParamsWithoutLogin params = new StartMeetingParamsWithoutLogin();
 
-		params.userId = options.get("userId");
-        params.displayName = options.get("displayName");
+		    // params.userId = options.get("userId");
+        // params.displayName = options.get("displayName");
         params.meetingNo = options.get("meetingId");
-		params.userType = MeetingService.USER_TYPE_API_USER;
-		params.zoomToken = options.get("zoomToken");
-		params.zoomAccessToken = options.get("zoomAccessToken");
+		    // params.userType = MeetingService.USER_TYPE_API_USER;
+		    // params.zoomToken = options.get("zoomToken");
+		    // params.zoomAccessToken = options.get("zoomAccessToken");
 		
         meetingService.startMeetingWithParams(context, params, opts);
 
