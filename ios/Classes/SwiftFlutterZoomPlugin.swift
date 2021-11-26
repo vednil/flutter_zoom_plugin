@@ -3,6 +3,7 @@ import UIKit
 import MobileRTC
 
 public class SwiftFlutterZoomPlugin: NSObject, FlutterPlugin {
+    var eventSink: FlutterEventSink?
     public static func register(with registrar: FlutterPluginRegistrar) {
         
         let factory = ZoomViewFactory(messenger: registrar.messenger())
@@ -28,27 +29,25 @@ public class ZoomViewFactory: NSObject, FlutterPlatformViewFactory {
 }
 
 public class AuthenticationDelegate: NSObject, MobileRTCAuthDelegate {
-    
+
     private var result: FlutterResult?
-    
-    
+
+
     public func onAuth(_ result: FlutterResult?) -> AuthenticationDelegate {
         self.result = result
         return self
     }
-    
-    
     public func onMobileRTCAuthReturn(_ returnValue: MobileRTCAuthError) {
 
-        if returnValue == MobileRTCAuthError_Success {
+        if returnValue == .success {
             self.result?([0, 0])
         } else {
             self.result?([1, 0])
         }
-        
+
         self.result = nil
     }
-    
+
     public func onMobileRTCLoginReturn(_ returnValue: Int) {
         
     }
@@ -225,7 +224,7 @@ public class ZoomView: NSObject, FlutterPlatformView, MobileRTCMeetingServiceDel
         context.enableLog = true
         context.bundleResPath = pluginBundlePath
         MobileRTC.shared().initialize(context)
-        
+               
         let auth = MobileRTC.shared().getAuthService()
         auth?.delegate = self.authenticationDelegate.onAuth(result)
         auth?.clientKey = arguments["appKey"]!
@@ -249,30 +248,52 @@ public class ZoomView: NSObject, FlutterPlatformView, MobileRTCMeetingServiceDel
         
         let meetingService = MobileRTC.shared().getMeetingService()
         let meetingSettings = MobileRTC.shared().getMeetingSettings()
-        
+
         if meetingService != nil {
             
+            
+            
             let arguments = call.arguments as! Dictionary<String, String?>
+            
             
             meetingSettings?.disableDriveMode(parseBoolean(data: arguments["disableDrive"]!, defaultValue: false))
             meetingSettings?.disableCall(in: parseBoolean(data: arguments["disableDialIn"]!, defaultValue: false))
             meetingSettings?.setAutoConnectInternetAudio(parseBoolean(data: arguments["noDisconnectAudio"]!, defaultValue: false))
             meetingSettings?.setMuteAudioWhenJoinMeeting(parseBoolean(data: arguments["noAudio"]!, defaultValue: false))
-            meetingSettings?.meetingShareHidden = parseBoolean(data: arguments["disableShare"]!, defaultValue: false)
-            meetingSettings?.meetingInviteHidden = parseBoolean(data: arguments["disableDrive"]!, defaultValue: false)
+            meetingSettings?.meetingShareHidden = true
+            meetingSettings?.bottomBarHidden = false
+            meetingSettings?.topBarHidden = true
+            meetingSettings?.enableCustomMeeting = true
+            meetingSettings?.hintHidden = true
+            meetingSettings?.meetingTitleHidden = true
+            meetingSettings?.meetingLeaveHidden = false
+            meetingSettings?.meetingInviteUrlHidden = true
+            
+        
+            
+            
+            meetingSettings?.meetingInviteHidden = true
+            meetingSettings?.meetingPasswordHidden = true
+            meetingSettings?.thumbnailInShare = false
+            meetingSettings?.promoteToPanelistHidden = true
+            meetingSettings?.meetingMoreHidden = false       
+            
        
-            var params = [
-                kMeetingParam_Username: arguments["userId"]!!,
-                kMeetingParam_MeetingNumber: arguments["meetingId"]!!
-            ]
+            // var params = [
+            //     kMeetingParam_Username: arguments["userId"]!!,
+            //     kMeetingParam_MeetingNumber: arguments["meetingId"]!!
+            // ]
             
-            let hasPassword = arguments["meetingPassword"]! != nil
+            let joinMeetingParameters = MobileRTCMeetingJoinParam();
+            joinMeetingParameters.meetingNumber = "92169304637" // arguments["meetingId"]!!;
+
+            let hasPassword = arguments["meetingPassword"]! != nil;
             if hasPassword {
-                params[kMeetingParam_MeetingPassword] = arguments["meetingPassword"]!!
+                joinMeetingParameters.password = "4QcLhP" // arguments["meetingPassword"]!!;
             }
-            
-            let response = meetingService?.joinMeeting(with: params)
-            
+
+            let response = meetingService?.joinMeeting(with: joinMeetingParameters);
+
             if let response = response {
                 print("Got response from join: \(response)")
             }
@@ -295,19 +316,27 @@ public class ZoomView: NSObject, FlutterPlatformView, MobileRTCMeetingServiceDel
             meetingSettings?.disableCall(in: parseBoolean(data: arguments["disableDialIn"]!, defaultValue: false))
             meetingSettings?.setAutoConnectInternetAudio(parseBoolean(data: arguments["noDisconnectAudio"]!, defaultValue: false))
             meetingSettings?.setMuteAudioWhenJoinMeeting(parseBoolean(data: arguments["noAudio"]!, defaultValue: false))
-            meetingSettings?.meetingShareHidden = parseBoolean(data: arguments["disableShare"]!, defaultValue: false)
-            meetingSettings?.meetingInviteHidden = parseBoolean(data: arguments["disableDrive"]!, defaultValue: false)
+            meetingSettings?.meetingTitleHidden = parseBoolean(data: arguments["disableTitlebar"]!, defaultValue: true)
+            meetingSettings?.meetingPasswordHidden = true
+            meetingSettings?.meetingShareHidden = true
+            meetingSettings?.meetingInviteHidden = true
+            meetingSettings?.meetingPasswordHidden = true
+            meetingSettings?.promoteToPanelistHidden = true
+            
+           
 
             let user: MobileRTCMeetingStartParam4WithoutLoginUser = MobileRTCMeetingStartParam4WithoutLoginUser.init()
             
-            user.userType = MobileRTCUserType_APIUser
+            user.userType = .apiUser
             user.meetingNumber = arguments["meetingId"]!!
             user.userName = arguments["displayName"]!!
-            user.userToken = arguments["zoomToken"]!!
+           // user.userToken = arguments["zoomToken"]!!
             user.userID = arguments["userId"]!!
             user.zak = arguments["zoomAccessToken"]!!
 
             let param: MobileRTCMeetingStartParam = user
+
+            // let param = MobileRTCMeetingStartParam4LoginlUser()
             
             let response = meetingService?.startMeeting(with: param)
             
@@ -366,7 +395,7 @@ public class ZoomView: NSObject, FlutterPlatformView, MobileRTCMeetingServiceDel
         // }
         return message
     }
-    
+
     public func onMeetingStateChange(_ state: MobileRTCMeetingState) {
         
         guard let eventSink = eventSink else {
@@ -398,26 +427,26 @@ public class ZoomView: NSObject, FlutterPlatformView, MobileRTCMeetingServiceDel
         var message: [String]
         
         switch state {
-        case MobileRTCMeetingState_Idle:
-            message = ["MEETING_STATUS_IDLE", "No meeting is running"]
-            break
-        case MobileRTCMeetingState_Connecting:
-            message = ["MEETING_STATUS_CONNECTING", "Connect to the meeting server"]
-            break
-        case MobileRTCMeetingState_InMeeting:
-            message = ["MEETING_STATUS_INMEETING", "Meeting is ready and in process"]
-            break
-        case MobileRTCMeetingState_WebinarPromote:
-            message = ["MEETING_STATUS_WEBINAR_PROMOTE", "Upgrade the attendees to panelist in webinar"]
-            break
-        case MobileRTCMeetingState_WebinarDePromote:
-            message = ["MEETING_STATUS_WEBINAR_DEPROMOTE", "Demote the attendees from the panelist"]
-            break
-        default:
-            message = ["MEETING_STATUS_UNKNOWN", "Unknown error"]
-        }
-        
-        return message
-    }
+               case .idle:
+                   message = ["MEETING_STATUS_IDLE", "No meeting is running"]
+                   break
+               case .connecting:
+                   message = ["MEETING_STATUS_CONNECTING", "Connect to the meeting server"]
+                   break
+               case .inMeeting:
+                   message = ["MEETING_STATUS_INMEETING", "Meeting is ready and in process"]
+                   break
+               case .webinarPromote:
+                   message = ["MEETING_STATUS_WEBINAR_PROMOTE", "Upgrade the attendees to panelist in webinar"]
+                   break
+               case .webinarDePromote:
+                   message = ["MEETING_STATUS_WEBINAR_DEPROMOTE", "Demote the attendees from the panelist"]
+                   break
+               default:
+                   message = ["MEETING_STATUS_UNKNOWN", "Unknown error"]
+               }
+
+               return message
+           }
     
 }
