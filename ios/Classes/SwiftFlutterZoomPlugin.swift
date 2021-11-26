@@ -285,11 +285,11 @@ public class ZoomView: NSObject, FlutterPlatformView, MobileRTCMeetingServiceDel
             // ]
             
             let joinMeetingParameters = MobileRTCMeetingJoinParam();
-            joinMeetingParameters.meetingNumber = "92169304637" // arguments["meetingId"]!!;
+            joinMeetingParameters.meetingNumber = arguments["meetingId"]!!;
 
             let hasPassword = arguments["meetingPassword"]! != nil;
             if hasPassword {
-                joinMeetingParameters.password = "4QcLhP" // arguments["meetingPassword"]!!;
+                joinMeetingParameters.password = arguments["meetingPassword"]!!;
             }
 
             let response = meetingService?.joinMeeting(with: joinMeetingParameters);
